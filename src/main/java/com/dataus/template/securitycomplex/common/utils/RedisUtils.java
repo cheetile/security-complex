@@ -19,7 +19,7 @@ public class RedisUtils {
             .set(key, value);
     }
 
-    public void setDataExipere(String key, String value, Duration duration) {
+    public void setDataExipre(String key, String value, Duration duration) {
         stringRedisTemplate.opsForValue()
             .set(key, value, duration);
     }

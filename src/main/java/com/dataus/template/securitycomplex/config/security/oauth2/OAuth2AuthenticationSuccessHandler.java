@@ -79,7 +79,7 @@ public class OAuth2AuthenticationSuccessHandler extends SimpleUrlAuthenticationS
         String refreshToken = jwtUtils
                     .generateRefreshToken(username);
                 
-        redisUtils.setDataExipere(
+        redisUtils.setDataExipre(
             username, 
             refreshToken, 
             Duration.ofMillis(

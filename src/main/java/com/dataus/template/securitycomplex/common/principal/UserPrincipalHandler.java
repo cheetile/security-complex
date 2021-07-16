@@ -53,7 +53,7 @@ public class UserPrincipalHandler {
         String refreshToken = jwtUtils
                     .generateRefreshToken(username);
 
-        redisUtils.setDataExipere(
+        redisUtils.setDataExipre(
             username, 
             refreshToken, 
             Duration.ofMillis(
@@ -78,7 +78,7 @@ public class UserPrincipalHandler {
             .map(Cookie::getValue)
             .ifPresent(refreshToken -> {
                 String accessToken = principal.getAccessToken();
-                redisUtils.setDataExipere(
+                redisUtils.setDataExipre(
                     accessToken,
                     "blacklist",
                     Duration.ofMillis(jwtUtils.getExpirationMs(accessToken)));
