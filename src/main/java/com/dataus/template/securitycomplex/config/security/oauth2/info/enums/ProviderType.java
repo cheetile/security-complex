@@ -24,6 +24,7 @@ public enum ProviderType {
                 .filter(p -> p.getCode().equals(code))
                 .findAny()
                 .orElseThrow(() ->
-                    ErrorType.INVALID_PROVIDER_CODE.getException());
+                    ErrorType.INVALID_PROVIDER_CODE
+                        .getResponseStatusException());
     }
 }

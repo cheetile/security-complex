@@ -25,7 +25,6 @@ public class JwtAuthEntryPoint implements AuthenticationEntryPoint {
 
         ErrorType error = ErrorType.UNAUTHORIZED_MEMBER;
 
-        log.error("AuthenticationException: {}", authException);
         log.error("AuthenticationException ErrorType: {}", error);
         
         response.sendError(

@@ -18,6 +18,7 @@ import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.web.filter.CorsFilter;
 
 import lombok.RequiredArgsConstructor;
 
@@ -30,6 +31,8 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
 
     private final OAuth2AuthenticationSuccessHandler oAuth2AuthenticationSuccessHandler;
     private final OAuth2AuthenticationFailureHandler oAuth2AuthenticationFailureHandler;
+
+    private final CorsFilter corsFilter;
 
     @Bean
     public PasswordEncoder passwordEncoder() {
@@ -59,6 +62,7 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
             .sessionManagement()
                 .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
                 .and()
+            .addFilter(corsFilter)
             .formLogin()
                 .disable()
             .httpBasic()
@@ -78,7 +82,16 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
                 .failureHandler(oAuth2AuthenticationFailureHandler)
                 .and()
             .authorizeRequests()
-                .antMatchers("/")
+                .antMatchers("/",
+                             "/error",
+                             "/favicon.ico",
+                             "/**/*.png",
+                             "/**/*.gif",
+                             "/**/*.svg",
+                             "/**/*.jpg",
+                             "/**/*.html",
+                             "/**/*.css",
+                             "/**/*.js")
                     .permitAll()
                 .antMatchers(HttpMethod.GET, "/api/v1/members/**")
                     .permitAll()

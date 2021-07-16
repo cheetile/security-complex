@@ -53,7 +53,8 @@ public class UserPrincipalService extends DefaultOAuth2UserService implements Us
                 .orElseGet(() -> {
                     Member m = memberRepository.save(
                         Member.of(oAuth2UserInfo));
-                    memberRoleRepository.save(new MemberRole(m, RoleType.ROLE_USER));
+                    memberRoleRepository.save(new MemberRole(
+                        m, RoleType.ROLE_USER));
                     
                     return m;
                 });

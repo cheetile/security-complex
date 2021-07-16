@@ -9,7 +9,9 @@ import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import com.dataus.template.securitycomplex.common.dto.BaseResponse;
 import com.dataus.template.securitycomplex.common.utils.CookieUtils;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.AuthenticationException;
@@ -38,9 +40,12 @@ public class OAuth2AuthenticationFailureHandler extends SimpleUrlAuthenticationF
             .build()
             .toUriString();
         
+        String json = new ObjectMapper()
+            .writeValueAsString(
+                new BaseResponse<>(false, "Fail to login"));
         response.setContentType("application/json");
-        response.getWriter().write(
-            "{\"error\": \"" + exception.getLocalizedMessage() + "\"}");
+        response.getWriter().write(json);
+        response.flushBuffer();
 
         httpCookieOAuth2AuthorizationRequestRepository.removeAuthorizationRequestCookies(request, response);
 

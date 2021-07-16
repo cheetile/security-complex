@@ -54,9 +54,6 @@ public class Member extends BaseEntity {
     private ProviderType provider;
 
     @Column(length = 100)
-    private String name;
-
-    @Column(length = 100)
     private String nickname;
 
     @Column(length = 320)
@@ -69,15 +66,14 @@ public class Member extends BaseEntity {
     private List<MemberRole> roles = new ArrayList<>();
 
 
-    public Member(String username, ProviderType provider, String name, String nickname, String email, String imageUrl) {
-        this(username, null, provider, name, nickname, email, imageUrl);
+    public Member(String username, ProviderType provider, String nickname, String email, String imageUrl) {
+        this(username, null, provider, nickname, email, imageUrl);
     }
 
-    public Member(String username, String password, ProviderType provider, String name, String nickname, String email, String imageUrl) {
+    public Member(String username, String password, ProviderType provider, String nickname, String email, String imageUrl) {
         this.username = username;
         this.password = password;
         this.provider = provider;
-        this.name = name;
         this.nickname = nickname;
         this.email = email;
         this.imageUrl = imageUrl;
@@ -87,7 +83,6 @@ public class Member extends BaseEntity {
         return new Member(
             oAuth2UserInfo.getUsername(), 
             oAuth2UserInfo.getProvider(), 
-            oAuth2UserInfo.getName(), 
             oAuth2UserInfo.getNickname(), 
             oAuth2UserInfo.getEmail(),
             oAuth2UserInfo.getImageUrl());
@@ -106,9 +101,7 @@ public class Member extends BaseEntity {
     }
 
     public void modify(ModifyRequest modifyRequest) {
-        this.name = modifyRequest.getName();
         this.nickname = modifyRequest.getNickname();
-        this.email = modifyRequest.getEmail();
         this.imageUrl = modifyRequest.getImage();
     }
     

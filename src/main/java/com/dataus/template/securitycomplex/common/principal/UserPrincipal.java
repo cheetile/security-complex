@@ -16,6 +16,8 @@ public class UserPrincipal implements OAuth2User, UserDetails {
 
     private Map<String, Object> attributes;
 
+    private String accessToken;
+
     public UserPrincipal(Member member, Map<String, Object> attributes) {
         this.member = member;
         this.attributes = attributes;
@@ -80,6 +82,14 @@ public class UserPrincipal implements OAuth2User, UserDetails {
 
     public Member getMember() {
         return member;
+    }
+
+    public String getAccessToken() {
+        return accessToken;
+    }
+
+    public void setAccessToken(String accessToken) {
+        this.accessToken = accessToken;
     }
 
     public boolean hasRole(Long id) {

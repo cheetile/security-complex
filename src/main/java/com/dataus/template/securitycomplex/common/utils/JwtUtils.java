@@ -2,49 +2,67 @@ package com.dataus.template.securitycomplex.common.utils;
 
 import java.util.Date;
 
-import com.dataus.template.securitycomplex.common.principal.UserPrincipal;
 import com.dataus.template.securitycomplex.common.property.AppProperties;
+import com.dataus.template.securitycomplex.common.property.AppProperties.Auth;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.ExpiredJwtException;
+import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.MalformedJwtException;
 import io.jsonwebtoken.SignatureAlgorithm;
 import io.jsonwebtoken.SignatureException;
 import io.jsonwebtoken.UnsupportedJwtException;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 @Component
-@RequiredArgsConstructor
 public class JwtUtils {
 
-    private final AppProperties appProperties;
+    private String jwtSecret;
+    private long accessTokenExpirationMs;
+    private long refreshTokenExpirationMs;
 
-    public String generateJwtToken(UserPrincipal principal) {
-        return Jwts.builder()
-                .setSubject(principal.getName())
-                .setIssuedAt(new Date())
-                .setExpiration(new Date((new Date()).getTime() + appProperties.getAuth().getJwtExpirationMs()))
-                .signWith(SignatureAlgorithm.HS512, appProperties.getAuth().getJwtSecret())
-                .compact();
+    @Autowired
+    public JwtUtils(AppProperties appProperties) {
+        Auth auth = appProperties.getAuth();
+
+        this.jwtSecret = auth.getJwtSecret();
+        this.accessTokenExpirationMs = auth.getAccessTokenExpirationMs();
+        this.refreshTokenExpirationMs = auth.getRefreshTokenExpirationMs();    
     }
 
-    public String getUsernameFromJwtToken(String token) {
-        return Jwts.parser()
-                .setSigningKey(appProperties.getAuth().getJwtSecret())
-                .parseClaimsJws(token)
-                .getBody()
-                .getSubject();
+    public String generateAccessToken(String username) {
+        return generateToken(
+            username,
+            accessTokenExpirationMs);
+    }
+
+    public String generateRefreshToken(String username) {
+        return generateToken(
+            username, 
+            refreshTokenExpirationMs);
+    }
+
+    private String generateToken(String username, long expirationMs) {
+        Date now = new Date();
+
+        return Jwts.builder()
+                .setSubject(username)
+                .setIssuedAt(now)
+                .setExpiration(new Date(now.getTime() + expirationMs))
+                .signWith(
+                    SignatureAlgorithm.HS512, 
+                    jwtSecret)
+                .compact();        
     }
 
     public boolean validateJwtToken(String token) {
         try {
-            Jwts.parser()
-                .setSigningKey(appProperties.getAuth().getJwtSecret())
-                .parseClaimsJws(token);
+            extractAllClaims(token);
             
             return true;
         } catch (SignatureException e) {
@@ -53,6 +71,7 @@ public class JwtUtils {
             log.error("Invalid JWT token: {}", e.getMessage());
         } catch (ExpiredJwtException e) {
             log.error("JWT token is expired: {}", e.getMessage());
+            return true;
         } catch (UnsupportedJwtException e) {
             log.error("JWT token is unsupported: {}", e.getMessage());
         } catch (IllegalArgumentException e) {
@@ -61,5 +80,36 @@ public class JwtUtils {
 
         return false;
     }
+
+    public String getUsernameFromJwtToken(String token) {
+        return extractAllClaims(token)
+                .getSubject();
+    }
+
+    public boolean isTokenExpired(String token) {
+        try {
+            extractAllClaims(token);
+            
+            return false;
+        } catch (ExpiredJwtException e) {
+            return true;
+        }
+    }
+
+    public int getExpirationMs(String token) {
+        return (int) (extractAllClaims(token)
+                        .getExpiration()
+                        .getTime() -
+                      new Date().getTime());
+    }
+
+    private Claims extractAllClaims(String token) 
+        throws JwtException, IllegalArgumentException {
+        
+        return Jwts.parser()
+                .setSigningKey(jwtSecret)
+                .parseClaimsJws(token)
+                .getBody();
+    };
     
 }

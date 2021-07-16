@@ -22,7 +22,8 @@ public class AppProperties {
     @Getter @Setter
     public static class Auth {
         private String jwtSecret;
-        private long jwtExpirationMs;        
+        private long accessTokenExpirationMs;
+        private long refreshTokenExpirationMs;   
     }
 
     @Getter

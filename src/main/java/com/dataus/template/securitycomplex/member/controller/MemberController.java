@@ -4,11 +4,14 @@ import java.net.URI;
 import java.util.Optional;
 import java.util.Set;
 
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 import javax.validation.Valid;
 import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.NotEmpty;
 import javax.validation.constraints.Size;
 
+import com.dataus.template.securitycomplex.common.dto.BaseResponse;
 import com.dataus.template.securitycomplex.common.exception.ErrorType;
 import com.dataus.template.securitycomplex.common.principal.CurrentMember;
 import com.dataus.template.securitycomplex.common.principal.UserPrincipal;
@@ -43,10 +46,23 @@ public class MemberController {
 
     @PostMapping("/signin")
     public ResponseEntity<?> login(
+        HttpServletRequest request, 
+        HttpServletResponse response,
         @Valid @RequestBody LoginRequest loginRequest) {
 
         return ResponseEntity.ok()
-                .body(memberService.login(loginRequest));                
+                .body(memberService.login(
+                    request, response, loginRequest));                
+    }
+
+    @PostMapping("/signout")
+    public ResponseEntity<?> logout(
+        @CurrentMember UserPrincipal principal,
+        HttpServletRequest request, 
+        HttpServletResponse response) {
+        
+        return ResponseEntity.ok()
+                .body(memberService.logout(principal, request, response));
     }
 
     @GetMapping("/{username}/exists")
@@ -60,18 +76,21 @@ public class MemberController {
 
     @PostMapping("/")
     public ResponseEntity<?> register(
+        HttpServletRequest request, 
+        HttpServletResponse response,
         @Valid @RequestBody RegisterRequest registerRequest) {
           
-        MemberResponse memberResponse = memberService.register(registerRequest);
+        BaseResponse<MemberResponse> registerResponse = memberService.register(
+            request, response, registerRequest);
 
         URI location = ServletUriComponentsBuilder
                 .fromCurrentContextPath()
                 .path("/api/v1/members/{id}")
-                .buildAndExpand(memberResponse.getId())
+                .buildAndExpand(registerResponse.getData().getId())
                 .toUri();
 
         return ResponseEntity.created(location)
-                .body(memberResponse);
+                .body(registerResponse);
 
     }
 
@@ -82,7 +101,8 @@ public class MemberController {
         return ResponseEntity.ok()
                 .body(MemberResponse.of(
                     memberOptional.orElseThrow(() ->
-                        ErrorType.UNAVAILABLE_PAGE.getException())));
+                        ErrorType.UNAVAILABLE_PAGE
+                            .getResponseStatusException())));
     }
 
     
@@ -93,11 +113,12 @@ public class MemberController {
         @Valid @RequestBody     ModifyRequest modifyRequest) {
         
         if(!principal.hasRole(id)) {
-            throw ErrorType.MEMBER_NO_AUTHORITY.getException();
+            throw ErrorType.MEMBER_NO_AUTHORITY
+                    .getResponseStatusException();
         }
         
         return ResponseEntity.ok()
-                .body(memberService.modifyMember(id, modifyRequest));
+                .body(memberService.modifyMember(principal, id, modifyRequest));
     }
     
 
@@ -107,11 +128,12 @@ public class MemberController {
         @PathVariable("id") Long id) {
 
         if(!principal.hasRole(id)) {
-            throw ErrorType.MEMBER_NO_AUTHORITY.getException();
+            throw ErrorType.MEMBER_NO_AUTHORITY
+                    .getResponseStatusException();
         }
 
         return ResponseEntity.ok()
-                .body(memberService.deleteMember(id));        
+                .body(memberService.deleteMember(principal, id));        
     }
 
     @PutMapping("/{id}/roles")
@@ -121,11 +143,12 @@ public class MemberController {
         @NotEmpty @RequestBody Set<RoleType> roles) {
         
         if(!principal.getAuthorities().contains(RoleType.ROLE_ADMIN)) {
-            throw ErrorType.MEMBER_NO_AUTHORITY.getException();
+            throw ErrorType.MEMBER_NO_AUTHORITY
+                    .getResponseStatusException();
         }
 
         return ResponseEntity.ok()
-                .body(memberService.changeRoles(id, roles));
+                .body(memberService.changeRoles(principal, id, roles));
 
     }
     

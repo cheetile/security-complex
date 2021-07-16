@@ -1,6 +1,5 @@
 package com.dataus.template.securitycomplex.member.dto;
 
-import javax.validation.constraints.Email;
 import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.Size;
 
@@ -12,13 +11,7 @@ import lombok.Data;
 public class ModifyRequest {
 
     @Size(max = 100) @NotBlank
-    private String name;
-
-    @Size(max = 100) @NotBlank
     private String nickname;
-
-    @Email @Size(max = 320)
-    private String email;
 
     @Size(max = 2083)
     private String image;
