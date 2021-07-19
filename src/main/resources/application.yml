@@ -6,16 +6,17 @@ server:
 
 spring:
     datasource:
-        url: jdbc:h2:tcp://localhost/~/complex
-        username: sa
-        password:
-        driver-class-name: org.h2.Driver
+        url: jdbc:mysql://localhost:3306/deverse?serverTimezone=Asia/Seoul
+        username: dataus
+        password: epdlxjtm123!@#
+        driver-class-name: com.mysql.cj.jdbc.Driver
     
     jpa:
         hibernate:
             ddl-auto: create
         properties:
             hibernate:
+                dialect: org.hibernate.dialect.MySQL5InnoDBDialect
             # show_sql: true
             format_sql: true
     

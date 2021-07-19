@@ -4,13 +4,11 @@ import java.io.IOException;
 
 import javax.servlet.FilterChain;
 import javax.servlet.ServletException;
-import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import com.dataus.template.securitycomplex.common.exception.ErrorType;
 import com.dataus.template.securitycomplex.common.principal.UserPrincipal;
-import com.dataus.template.securitycomplex.common.utils.CookieUtils;
 import com.dataus.template.securitycomplex.common.utils.JwtUtils;
 import com.dataus.template.securitycomplex.common.utils.RedisUtils;
 import com.dataus.template.securitycomplex.member.service.UserPrincipalService;
@@ -51,30 +49,9 @@ public class AuthTokenFilter extends OncePerRequestFilter {
                     throw ErrorType.MEBER_SINGED_OUT
                             .getException();
 
-                if(jwtUtils.isTokenExpired(accessToken)) {
-                    String refreshToken = CookieUtils
-                        .getCookie(request, "refreshToken")
-                        .map(Cookie::getValue)
-                        .orElseThrow(() -> 
-                            ErrorType.CLIENT_TOKEN_NOT_EXISTS
-                                .getException());
-
-                    username = jwtUtils.getUsernameFromJwtToken(refreshToken);
-                    String savedRefreshToken = redisUtils.getData(username)
-                        .orElseThrow(() -> 
-                            ErrorType.SERVER_TOKEN_NOT_EXISTS
-                                .getException());
-                    
-                    if(!refreshToken.equals(savedRefreshToken)) {
-                        CookieUtils.deleteCookie(
-                            request, response, "refreshToken");
-                        redisUtils.deleteData(username);
-                        throw ErrorType.INVALID_REFRESH_TOKEN
-                                .getException();
-                    }
-
-                    accessToken = jwtUtils.generateAccessToken(username);
-                }
+                if(jwtUtils.isTokenExpired(accessToken))
+                    throw ErrorType.ACCESS_TOKEN_EXPIRED
+                            .getException();
 
                 username = jwtUtils.getUsernameFromJwtToken(accessToken);
                 UserPrincipal principal = userPrincipalService

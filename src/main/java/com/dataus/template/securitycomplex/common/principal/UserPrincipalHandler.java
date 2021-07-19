@@ -6,6 +6,7 @@ import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import com.dataus.template.securitycomplex.common.exception.ErrorType;
 import com.dataus.template.securitycomplex.common.utils.CookieUtils;
 import com.dataus.template.securitycomplex.common.utils.JwtUtils;
 import com.dataus.template.securitycomplex.common.utils.RedisUtils;
@@ -39,6 +40,38 @@ public class UserPrincipalHandler {
         
         return (UserPrincipal) authentication.getPrincipal();
         
+    }
+
+    public String getAccessToken(
+        String currentToken,
+        HttpServletRequest request, 
+        HttpServletResponse response) {
+        
+        if(!jwtUtils.validateJwtToken(currentToken) ||
+           !jwtUtils.isTokenExpired(currentToken)) {
+            throw ErrorType.INVALID_TOKEN_REQUEST.getException();
+        }
+        
+        String refreshToken = CookieUtils
+            .getCookie(request, "refreshToken")
+            .map(Cookie::getValue)
+            .orElseThrow(() -> 
+                ErrorType.CLIENT_REFRESH_TOKEN_NOT_EXIST.getException());
+
+        String username = jwtUtils.getUsernameFromJwtToken(refreshToken);
+        String savedRefreshToken = redisUtils.getData(username)
+            .orElseThrow(() -> 
+                ErrorType.SERVER_REFRESH_TOKEN_NOT_EXIST.getException());
+        
+        if(!refreshToken.equals(savedRefreshToken)) {
+            CookieUtils.deleteCookie(
+                request, response, "refreshToken");
+            redisUtils.deleteData(username);
+            throw ErrorType.INVALID_REFRESH_TOKEN.getException();
+        }
+
+        return jwtUtils.generateAccessToken(username);
+
     }
 
     public String getAccessTokenWithProcessLogin(

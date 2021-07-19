@@ -19,7 +19,6 @@ import com.dataus.template.securitycomplex.common.property.AppProperties;
 import com.dataus.template.securitycomplex.common.utils.CookieUtils;
 import com.dataus.template.securitycomplex.common.utils.JwtUtils;
 import com.dataus.template.securitycomplex.common.utils.RedisUtils;
-import com.dataus.template.securitycomplex.member.dto.MemberResponse;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import org.springframework.security.core.Authentication;
@@ -92,13 +91,12 @@ public class OAuth2AuthenticationSuccessHandler extends SimpleUrlAuthenticationS
             (int) (jwtUtils.getExpirationMs(refreshToken)/1000));
         
         String accessToken = jwtUtils.generateAccessToken(username);
-        String json = new ObjectMapper()
-            .writeValueAsString(
-                new BaseResponse<MemberResponse>(
-                    true, 
-                    "Success to login", 
-                    accessToken, 
-                    MemberResponse.of(principal.getMember())));
+        String json = new ObjectMapper().writeValueAsString(
+                BaseResponse.builder()
+                    .success(true)
+                    .message("Success to login")
+                    .accessToken(accessToken)
+                    .build());
         response.setContentType("application/json");
         response.getWriter().write(json);
         response.flushBuffer();

@@ -6,8 +6,6 @@ import static org.springframework.http.HttpStatus.NOT_FOUND;
 import static org.springframework.http.HttpStatus.UNAUTHORIZED;
 
 import org.springframework.http.HttpStatus;
-import org.springframework.security.core.AuthenticationException;
-import org.springframework.security.web.authentication.session.SessionAuthenticationException;
 import org.springframework.web.server.ResponseStatusException;
 
 import lombok.AllArgsConstructor;
@@ -26,11 +24,13 @@ public enum ErrorType {
     UNAUTHORIZED_MEMBER(UNAUTHORIZED, "Failed to authorize"),
     MEMBER_NO_AUTHORITY(UNAUTHORIZED, "Unauthorized access"),
     NOT_SUPPORTED_PROVIDER(UNAUTHORIZED, "This provider is not supported yet"),
-    CLIENT_TOKEN_NOT_EXISTS(UNAUTHORIZED, "Client refresh token doesn't exist"),
-    SERVER_TOKEN_NOT_EXISTS(UNAUTHORIZED, "Server refresh token doesn't exist"),
-    MEBER_SINGED_OUT(UNAUTHORIZED, "This member signed out"),
+    CLIENT_REFRESH_TOKEN_NOT_EXIST(UNAUTHORIZED, "Client refresh token doesn't exist"),
+    SERVER_REFRESH_TOKEN_NOT_EXIST(UNAUTHORIZED, "Server refresh token doesn't exist"),
     INVALID_REFRESH_TOKEN(UNAUTHORIZED, "This refresh token can't authenticate"),
+    MEBER_SINGED_OUT(UNAUTHORIZED, "This member signed out"),
     UNAUTHORIZED_REDIRECTION(UNAUTHORIZED, "Unauthorized redirection"),
+    ACCESS_TOKEN_EXPIRED(UNAUTHORIZED, "Access token expired"),
+    INVALID_TOKEN_REQUEST(UNAUTHORIZED, "Current access token is invalid or not expired"),
 
     // 404 NOT_FOUND
     UNAVAILABLE_PAGE(NOT_FOUND, "This page not found"),

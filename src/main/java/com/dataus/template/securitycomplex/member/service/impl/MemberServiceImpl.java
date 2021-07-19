@@ -2,17 +2,10 @@ package com.dataus.template.securitycomplex.member.service.impl;
 
 import java.util.Set;
 
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 import javax.transaction.Transactional;
 
-import com.dataus.template.securitycomplex.common.dto.BaseResponse;
 import com.dataus.template.securitycomplex.common.exception.ErrorType;
-import com.dataus.template.securitycomplex.common.principal.UserPrincipal;
-import com.dataus.template.securitycomplex.common.principal.UserPrincipalHandler;
 import com.dataus.template.securitycomplex.config.security.oauth2.info.enums.ProviderType;
-import com.dataus.template.securitycomplex.member.dto.LoginRequest;
-import com.dataus.template.securitycomplex.member.dto.MemberResponse;
 import com.dataus.template.securitycomplex.member.dto.ModifyRequest;
 import com.dataus.template.securitycomplex.member.dto.RegisterRequest;
 import com.dataus.template.securitycomplex.member.entity.Member;
@@ -36,64 +29,24 @@ public class MemberServiceImpl implements MemberService {
     private final MemberRoleRepository memberRoleRepository;
 
     private final PasswordEncoder passwordEncoder;
-    private final UserPrincipalHandler userPrincipalHandler;
     
 
     @Override
-    public BaseResponse<?> existsUsername(String username) {
-        if(!memberRepository.existsByUsername(username)) {
-            return new BaseResponse<>(
-                false, 
-                String.format("Not Found username: %s", username));
+    public boolean existsUsername(String username) {
+        if(memberRepository.existsByUsername(username)) {
+            return true;
         }
 
-        return new BaseResponse<>(
-            true, 
-            String.format("Found username: %s", username));
+        return false;
     }
 
     @Override
-    public BaseResponse<MemberResponse> login(
-        HttpServletRequest request, 
-        HttpServletResponse response, 
-        LoginRequest loginRequest) {
-        
-        UserPrincipal principal = userPrincipalHandler.getPrincipal(
-            loginRequest.getUsername(), 
-            loginRequest.getPassword());
-        
-        String accessToken = userPrincipalHandler
-            .getAccessTokenWithProcessLogin(request, response, principal);
-
-        return new BaseResponse<MemberResponse>(
-                true, 
-                "success to login", 
-                accessToken, 
-                MemberResponse.of(principal.getMember()));
-    }
-
-    @Override
-    public BaseResponse<?> logout(
-        UserPrincipal principal,
-        HttpServletRequest request, 
-        HttpServletResponse response) {
-
-        userPrincipalHandler.processLogout(principal, request, response);
-        
-        return new BaseResponse<>(true, "success to logout");
-    }
-
-    @Override
-    public BaseResponse<MemberResponse> register(
-        HttpServletRequest request, 
-        HttpServletResponse response, 
-        RegisterRequest registerRequest) {
+    public void register(RegisterRequest registerRequest) {
             
         String username = registerRequest.getUsername();
         String password = registerRequest.getPassword();
-        if(existsUsername(username).isSuccess()) {
-            throw ErrorType.REGISTERED_USERNAME
-                    .getException();
+        if(existsUsername(username)) {
+            throw ErrorType.REGISTERED_USERNAME.getException();
         }
 
         Member member = memberRepository.save(new Member(
@@ -105,70 +58,39 @@ public class MemberServiceImpl implements MemberService {
             null));        
         memberRoleRepository.save(new MemberRole(
             member, RoleType.ROLE_USER));
-        
-        UserPrincipal principal = userPrincipalHandler.getPrincipal(
-            username, password);
-        
-        String accessToken = userPrincipalHandler
-            .getAccessTokenWithProcessLogin(request, response, principal);
-
-        return new BaseResponse<MemberResponse>(
-            true, 
-            "success to login", 
-            accessToken, 
-            MemberResponse.of(principal.getMember()));
     }
 
     @Override
-    public BaseResponse<?> modifyMember(UserPrincipal principal, Long id, ModifyRequest modifyRequest) {
+    public void modifyMember(Long id, ModifyRequest modifyRequest) {
         Member member = memberRepository
             .findById(id)
             .orElseThrow(() ->
-                ErrorType.NO_MEMBER_ID
-                    .getException());
+                ErrorType.NO_MEMBER_ID.getException());
 
-        member.modify(modifyRequest);        
-        
-        return new BaseResponse<>(
-            true, 
-            String.format("Modified Member Id[%s]", member.getUsername()),
-            principal.getAccessToken());
+        member.modify(modifyRequest); 
     }
 
     @Override
-    public BaseResponse<?> deleteMember(UserPrincipal principal, Long id) {
+    public void deleteMember(Long id) {
         Member member = memberRepository
             .findById(id)
             .orElseThrow(() ->
-                ErrorType.NO_MEMBER_ID
-                    .getException());
+                ErrorType.NO_MEMBER_ID.getException());
 
         member.delete();
-           
-        return new BaseResponse<>(
-            true, 
-            String.format("Deleted Member Id[%s]", member.getUsername()),
-            principal.getAccessToken());
     }
 
     @Override
-    public BaseResponse<?> changeRoles(UserPrincipal principal, Long id, Set<RoleType> roles) {
+    public void changeRoles(Long id, Set<RoleType> roles) {
         Member member = memberRepository
             .findById(id)
             .orElseThrow(() ->
-                ErrorType.NO_MEMBER_ID
-                    .getException());
+                ErrorType.NO_MEMBER_ID.getException());
         
         member.deleteRoles();
         roles.forEach(r -> 
             memberRoleRepository.save(new MemberRole(member, r)));
-        
-        return new BaseResponse<>(
-            true, 
-            String.format(
-                "Roles of member Id[%s] set to %s", 
-                member.getUsername()),
-            principal.getAccessToken());
+
     }
 
 }

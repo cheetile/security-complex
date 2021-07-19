@@ -15,6 +15,7 @@ import com.dataus.template.securitycomplex.common.dto.BaseResponse;
 import com.dataus.template.securitycomplex.common.exception.ErrorType;
 import com.dataus.template.securitycomplex.common.principal.CurrentMember;
 import com.dataus.template.securitycomplex.common.principal.UserPrincipal;
+import com.dataus.template.securitycomplex.common.principal.UserPrincipalHandler;
 import com.dataus.template.securitycomplex.member.dto.LoginRequest;
 import com.dataus.template.securitycomplex.member.dto.MemberResponse;
 import com.dataus.template.securitycomplex.member.dto.ModifyRequest;
@@ -32,6 +33,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
@@ -43,6 +45,7 @@ import lombok.RequiredArgsConstructor;
 public class MemberController {
 
     private final MemberService memberService;
+    private final UserPrincipalHandler userPrincipalHandler;
 
     @PostMapping("/signin")
     public ResponseEntity<?> login(
@@ -50,9 +53,20 @@ public class MemberController {
         HttpServletResponse response,
         @Valid @RequestBody LoginRequest loginRequest) {
 
-        return ResponseEntity.ok()
-                .body(memberService.login(
-                    request, response, loginRequest));                
+        UserPrincipal principal = userPrincipalHandler.getPrincipal(
+            loginRequest.getUsername(), 
+            loginRequest.getPassword());
+        
+        String accessToken = userPrincipalHandler
+            .getAccessTokenWithProcessLogin(request, response, principal);
+
+        return ResponseEntity.ok().body(
+                BaseResponse.builder()
+                    .success(true)
+                    .message("success to login")
+                    .accessToken(accessToken)
+                    .data(MemberResponse.of(principal.getMember()))
+                    .build());
     }
 
     @PostMapping("/signout")
@@ -60,18 +74,49 @@ public class MemberController {
         @CurrentMember UserPrincipal principal,
         HttpServletRequest request, 
         HttpServletResponse response) {
+
+        userPrincipalHandler.processLogout(principal, request, response);
         
-        return ResponseEntity.ok()
-                .body(memberService.logout(principal, request, response));
+        return ResponseEntity.ok().body(
+                BaseResponse.builder()
+                    .success(true)
+                    .message("Success to logout")
+                    .build());
+    }
+
+    
+    @GetMapping("/token")
+    public ResponseEntity<?> getAccessToken(
+        @NotEmpty @RequestParam("current") String currentToken,
+        HttpServletRequest request, 
+        HttpServletResponse response) {
+        
+        String accessToken = userPrincipalHandler
+            .getAccessToken(currentToken, request, response);
+        
+        return ResponseEntity.ok().body(
+                BaseResponse.builder()
+                    .success(true)
+                    .message("Issued new access token")
+                    .accessToken(accessToken)
+                    .build());
     }
 
     @GetMapping("/{username}/exists")
     public ResponseEntity<?> existsUsername(
         @Size(min = 5, max = 20) @NotBlank 
         @PathVariable("username") String username) {
+
+        boolean exists = memberService.existsUsername(username);
+        String message = exists ? 
+            String.format("Exists username[%s]", username) : 
+            String.format("Doesn't exist username[%s]", username);
         
-        return ResponseEntity.ok()
-                .body(memberService.existsUsername(username));
+        return ResponseEntity.ok().body(
+                BaseResponse.builder()
+                        .success(exists)
+                        .message(message)
+                        .build());
     }
 
     @PostMapping("/")
@@ -80,17 +125,31 @@ public class MemberController {
         HttpServletResponse response,
         @Valid @RequestBody RegisterRequest registerRequest) {
           
-        BaseResponse<MemberResponse> registerResponse = memberService.register(
-            request, response, registerRequest);
+        memberService.register(registerRequest);
+        
+        UserPrincipal principal = userPrincipalHandler.getPrincipal(
+            registerRequest.getUsername(),
+            registerRequest.getPassword());
+
+        String accessToken = userPrincipalHandler
+                .getAccessTokenWithProcessLogin(request, response, principal);
 
         URI location = ServletUriComponentsBuilder
                 .fromCurrentContextPath()
                 .path("/api/v1/members/{id}")
-                .buildAndExpand(registerResponse.getData().getId())
+                .buildAndExpand(principal.getMember().getId())
                 .toUri();
 
-        return ResponseEntity.created(location)
-                .body(registerResponse);
+        return ResponseEntity.created(location).body(
+                BaseResponse.builder()
+                    .success(true)
+                    .message(String.format(
+                        "Member username[%s] registered, generated Id[%d]", 
+                        principal.getUsername(), 
+                        principal.getMember().getId()))
+                    .accessToken(accessToken)
+                    .data(MemberResponse.of(principal.getMember()))
+                    .build());
 
     }
 
@@ -101,8 +160,7 @@ public class MemberController {
         return ResponseEntity.ok()
                 .body(MemberResponse.of(
                     memberOptional.orElseThrow(() ->
-                        ErrorType.UNAVAILABLE_PAGE
-                            .getException())));
+                        ErrorType.UNAVAILABLE_PAGE.getException())));
     }
 
     
@@ -112,13 +170,18 @@ public class MemberController {
         @PathVariable("id")     Long id,
         @Valid @RequestBody     ModifyRequest modifyRequest) {
         
-        if(!principal.hasRole(id)) {
-            throw ErrorType.MEMBER_NO_AUTHORITY
-                    .getException();
-        }
+        if(!principal.hasRole(id))
+            throw ErrorType.MEMBER_NO_AUTHORITY.getException();        
         
-        return ResponseEntity.ok()
-                .body(memberService.modifyMember(principal, id, modifyRequest));
+        memberService.modifyMember(id, modifyRequest);
+
+        return ResponseEntity.ok().body(
+                BaseResponse.builder()
+                    .success(true)
+                    .message(String.format(
+                        "Modified Member username[%s]", 
+                        principal.getUsername()))
+                    .build());
     }
     
 
@@ -128,12 +191,18 @@ public class MemberController {
         @PathVariable("id") Long id) {
 
         if(!principal.hasRole(id)) {
-            throw ErrorType.MEMBER_NO_AUTHORITY
-                    .getException();
+            throw ErrorType.MEMBER_NO_AUTHORITY.getException();
         }
 
-        return ResponseEntity.ok()
-                .body(memberService.deleteMember(principal, id));        
+        memberService.deleteMember(id);
+
+        return ResponseEntity.ok().body(
+                BaseResponse.builder()
+                    .success(true)
+                    .message(String.format(
+                        "Deleted Member username[%s]", 
+                        principal.getUsername()))
+                    .build());        
     }
 
     @PutMapping("/{id}/roles")
@@ -143,12 +212,18 @@ public class MemberController {
         @NotEmpty @RequestBody Set<RoleType> roles) {
         
         if(!principal.getAuthorities().contains(RoleType.ROLE_ADMIN)) {
-            throw ErrorType.MEMBER_NO_AUTHORITY
-                    .getException();
+            throw ErrorType.MEMBER_NO_AUTHORITY.getException();
         }
 
-        return ResponseEntity.ok()
-                .body(memberService.changeRoles(principal, id, roles));
+        memberService.changeRoles(id, roles);
+
+        return ResponseEntity.ok().body(
+                BaseResponse.builder()
+                    .success(true)
+                    .message(String.format(
+                        "Roles of member username[%s] set to %s", 
+                        principal.getUsername()))
+                    .build());
 
     }
     

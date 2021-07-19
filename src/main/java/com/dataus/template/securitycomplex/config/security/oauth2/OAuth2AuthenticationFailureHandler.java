@@ -40,9 +40,11 @@ public class OAuth2AuthenticationFailureHandler extends SimpleUrlAuthenticationF
             .build()
             .toUriString();
         
-        String json = new ObjectMapper()
-            .writeValueAsString(
-                new BaseResponse<>(false, "Fail to login"));
+        String json = new ObjectMapper().writeValueAsString(
+                BaseResponse.builder()
+                    .success(false)
+                    .message("Failed to login")
+                    .build());
         response.setContentType("application/json");
         response.getWriter().write(json);
         response.flushBuffer();

@@ -4,11 +4,13 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Getter;
 
 @AllArgsConstructor
 @Getter
-public class BaseResponse<T> {
+@Builder
+public class BaseResponse {
 
     private boolean success;
 
@@ -18,18 +20,10 @@ public class BaseResponse<T> {
     private String accessToken;
     
     @JsonInclude(Include.NON_NULL)
-    private T data;
-
-    public BaseResponse(boolean success, String message, String accessToken) {
-        this(success, message, accessToken, null);
-    }
-
-    public BaseResponse(boolean success, String message) {
-        this(success, message, null);
-    }
+    private Object data;
     
     public void setAccessToken(String accessToken) {
         this.accessToken = accessToken;
     }
-    
+
 }
