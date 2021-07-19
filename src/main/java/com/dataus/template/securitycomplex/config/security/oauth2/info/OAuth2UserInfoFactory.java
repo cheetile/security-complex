@@ -17,7 +17,7 @@ public class OAuth2UserInfoFactory {
         } else if(registrationId.equalsIgnoreCase("facebook")) {
             return new FacebookOAuth2UserInfo(attributes);
         } else {
-            throw ErrorType.NOT_SUPPORTED_PROVIDER.getAuthenticationException();
+            throw ErrorType.NOT_SUPPORTED_PROVIDER.getException();
         }
                 
     }

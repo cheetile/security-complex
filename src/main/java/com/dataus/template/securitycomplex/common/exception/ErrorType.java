@@ -45,14 +45,9 @@ public enum ErrorType {
     private HttpStatus httpStatus;
     private String message;
     
-    public ResponseStatusException getResponseStatusException() {
-        log.error("ResponseStatusException ErrorType: {}", this);
+    public ResponseStatusException getException() {
+        log.error("CustomException ErrorType: {}", this);
         return new ResponseStatusException(this.httpStatus, this.message);
-    }
-
-    public AuthenticationException getAuthenticationException() {
-        log.error("AuthenticationException ErrorType: {}", this);
-        return new SessionAuthenticationException(this.message);
     }
 
     @Override

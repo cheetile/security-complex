@@ -25,6 +25,6 @@ public enum ProviderType {
                 .findAny()
                 .orElseThrow(() ->
                     ErrorType.INVALID_PROVIDER_CODE
-                        .getResponseStatusException());
+                        .getException());
     }
 }

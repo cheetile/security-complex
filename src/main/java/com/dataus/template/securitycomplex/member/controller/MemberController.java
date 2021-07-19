@@ -102,7 +102,7 @@ public class MemberController {
                 .body(MemberResponse.of(
                     memberOptional.orElseThrow(() ->
                         ErrorType.UNAVAILABLE_PAGE
-                            .getResponseStatusException())));
+                            .getException())));
     }
 
     
@@ -114,7 +114,7 @@ public class MemberController {
         
         if(!principal.hasRole(id)) {
             throw ErrorType.MEMBER_NO_AUTHORITY
-                    .getResponseStatusException();
+                    .getException();
         }
         
         return ResponseEntity.ok()
@@ -129,7 +129,7 @@ public class MemberController {
 
         if(!principal.hasRole(id)) {
             throw ErrorType.MEMBER_NO_AUTHORITY
-                    .getResponseStatusException();
+                    .getException();
         }
 
         return ResponseEntity.ok()
@@ -144,7 +144,7 @@ public class MemberController {
         
         if(!principal.getAuthorities().contains(RoleType.ROLE_ADMIN)) {
             throw ErrorType.MEMBER_NO_AUTHORITY
-                    .getResponseStatusException();
+                    .getException();
         }
 
         return ResponseEntity.ok()

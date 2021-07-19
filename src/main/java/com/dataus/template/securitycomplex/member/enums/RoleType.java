@@ -25,7 +25,7 @@ public enum RoleType implements GrantedAuthority {
                 .findAny()
                 .orElseThrow(() -> 
                     ErrorType.INVALID_ROLE_CODE
-                        .getResponseStatusException());
+                        .getException());
     }
 
     @Override

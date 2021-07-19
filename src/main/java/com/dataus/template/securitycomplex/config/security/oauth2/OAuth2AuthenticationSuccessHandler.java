@@ -114,7 +114,7 @@ public class OAuth2AuthenticationSuccessHandler extends SimpleUrlAuthenticationS
         redirectUri.ifPresent(uri -> {
             if(!isAuthorizedRedirectUri(uri))
                 throw ErrorType.UNAUTHORIZED_REDIRECTION
-                        .getAuthenticationException();
+                        .getException();
         });
 
         String targetUrl = redirectUri.orElse(getDefaultTargetUrl());

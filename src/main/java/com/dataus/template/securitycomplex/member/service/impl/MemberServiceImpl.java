@@ -93,7 +93,7 @@ public class MemberServiceImpl implements MemberService {
         String password = registerRequest.getPassword();
         if(existsUsername(username).isSuccess()) {
             throw ErrorType.REGISTERED_USERNAME
-                    .getResponseStatusException();
+                    .getException();
         }
 
         Member member = memberRepository.save(new Member(
@@ -125,7 +125,7 @@ public class MemberServiceImpl implements MemberService {
             .findById(id)
             .orElseThrow(() ->
                 ErrorType.NO_MEMBER_ID
-                    .getResponseStatusException());
+                    .getException());
 
         member.modify(modifyRequest);        
         
@@ -141,7 +141,7 @@ public class MemberServiceImpl implements MemberService {
             .findById(id)
             .orElseThrow(() ->
                 ErrorType.NO_MEMBER_ID
-                    .getResponseStatusException());
+                    .getException());
 
         member.delete();
            
@@ -157,7 +157,7 @@ public class MemberServiceImpl implements MemberService {
             .findById(id)
             .orElseThrow(() ->
                 ErrorType.NO_MEMBER_ID
-                    .getResponseStatusException());
+                    .getException());
         
         member.deleteRoles();
         roles.forEach(r -> 

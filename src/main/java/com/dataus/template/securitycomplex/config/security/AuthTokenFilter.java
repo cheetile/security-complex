@@ -16,13 +16,12 @@ import com.dataus.template.securitycomplex.common.utils.RedisUtils;
 import com.dataus.template.securitycomplex.member.service.UserPrincipalService;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
 import org.springframework.util.StringUtils;
 import org.springframework.web.filter.OncePerRequestFilter;
+import org.springframework.web.server.ResponseStatusException;
 
 import lombok.NoArgsConstructor;
 
@@ -50,7 +49,7 @@ public class AuthTokenFilter extends OncePerRequestFilter {
 
                 if(redisUtils.getData(accessToken).isPresent())
                     throw ErrorType.MEBER_SINGED_OUT
-                            .getAuthenticationException();
+                            .getException();
 
                 if(jwtUtils.isTokenExpired(accessToken)) {
                     String refreshToken = CookieUtils
@@ -58,20 +57,20 @@ public class AuthTokenFilter extends OncePerRequestFilter {
                         .map(Cookie::getValue)
                         .orElseThrow(() -> 
                             ErrorType.CLIENT_TOKEN_NOT_EXISTS
-                                .getAuthenticationException());
+                                .getException());
 
                     username = jwtUtils.getUsernameFromJwtToken(refreshToken);
                     String savedRefreshToken = redisUtils.getData(username)
                         .orElseThrow(() -> 
                             ErrorType.SERVER_TOKEN_NOT_EXISTS
-                                .getAuthenticationException());
+                                .getException());
                     
                     if(!refreshToken.equals(savedRefreshToken)) {
                         CookieUtils.deleteCookie(
                             request, response, "refreshToken");
                         redisUtils.deleteData(username);
                         throw ErrorType.INVALID_REFRESH_TOKEN
-                                .getAuthenticationException();
+                                .getException();
                     }
 
                     accessToken = jwtUtils.generateAccessToken(username);
@@ -98,9 +97,9 @@ public class AuthTokenFilter extends OncePerRequestFilter {
             }
 
             filterChain.doFilter(request, response);
-        } catch(AuthenticationException ex) {
+        } catch(ResponseStatusException ex) {
             response.sendError(
-                HttpStatus.UNAUTHORIZED.value(),
+                ex.getStatus().value(),
                 ex.getMessage());
         }
 

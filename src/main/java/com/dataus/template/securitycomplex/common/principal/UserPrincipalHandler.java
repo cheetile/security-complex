@@ -77,15 +77,16 @@ public class UserPrincipalHandler {
         CookieUtils.getCookie(request, "refreshToken")
             .map(Cookie::getValue)
             .ifPresent(refreshToken -> {
-                String accessToken = principal.getAccessToken();
-                redisUtils.setDataExipre(
-                    accessToken,
-                    "blacklist",
-                    Duration.ofMillis(jwtUtils.getExpirationMs(accessToken)));
                 redisUtils.deleteData(jwtUtils.getUsernameFromJwtToken(refreshToken));
                 
                 CookieUtils.deleteCookie(request, response, "refreshToken");
             });
+        
+        String accessToken = principal.getAccessToken();
+        redisUtils.setDataExipre(
+            accessToken,
+            "blacklist",
+            Duration.ofMillis(jwtUtils.getExpirationMs(accessToken)));
         
     }
     
