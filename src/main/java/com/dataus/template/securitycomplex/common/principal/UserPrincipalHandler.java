@@ -47,39 +47,35 @@ public class UserPrincipalHandler {
         HttpServletRequest request, 
         HttpServletResponse response) {
         
-        if(!jwtUtils.validateJwtToken(currentToken) ||
-           !jwtUtils.isTokenExpired(currentToken)) {
-            throw ErrorType.INVALID_TOKEN_REQUEST.getException();
+        if(jwtUtils.validateJwtToken(currentToken)) {        
+            String refreshToken = CookieUtils
+                .getCookie(request, "refreshToken")
+                .map(Cookie::getValue)
+                .orElseThrow(() -> 
+                    ErrorType.CLIENT_REFRESH_TOKEN_NOT_EXIST.getException());
+
+            String username = jwtUtils.getUsernameFromJwtToken(refreshToken);
+            String savedRefreshToken = redisUtils.getData(username)
+                .orElseThrow(() -> 
+                    ErrorType.SERVER_REFRESH_TOKEN_NOT_EXIST.getException());
+            
+            if(!refreshToken.equals(savedRefreshToken)) {
+                CookieUtils.deleteCookie(
+                    request, response, "refreshToken");
+                redisUtils.deleteData(username);
+                throw ErrorType.INVALID_REFRESH_TOKEN.getException();
+            }
+
+            return jwtUtils.generateAccessToken(username);
         }
-        
-        String refreshToken = CookieUtils
-            .getCookie(request, "refreshToken")
-            .map(Cookie::getValue)
-            .orElseThrow(() -> 
-                ErrorType.CLIENT_REFRESH_TOKEN_NOT_EXIST.getException());
 
-        String username = jwtUtils.getUsernameFromJwtToken(refreshToken);
-        String savedRefreshToken = redisUtils.getData(username)
-            .orElseThrow(() -> 
-                ErrorType.SERVER_REFRESH_TOKEN_NOT_EXIST.getException());
-        
-        if(!refreshToken.equals(savedRefreshToken)) {
-            CookieUtils.deleteCookie(
-                request, response, "refreshToken");
-            redisUtils.deleteData(username);
-            throw ErrorType.INVALID_REFRESH_TOKEN.getException();
-        }
-
-        return jwtUtils.generateAccessToken(username);
-
+        return null;
     }
 
     public String getAccessTokenWithProcessLogin(
         HttpServletRequest request, 
         HttpServletResponse response, 
-        UserPrincipal principal) {
-
-        String username = principal.getUsername();
+        String username) {
 
         redisUtils.deleteData(username);
 

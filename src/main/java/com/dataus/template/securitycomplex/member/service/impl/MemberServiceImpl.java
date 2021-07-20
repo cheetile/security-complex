@@ -6,6 +6,7 @@ import javax.transaction.Transactional;
 
 import com.dataus.template.securitycomplex.common.exception.ErrorType;
 import com.dataus.template.securitycomplex.config.security.oauth2.info.enums.ProviderType;
+import com.dataus.template.securitycomplex.member.dto.MemberResponse;
 import com.dataus.template.securitycomplex.member.dto.ModifyRequest;
 import com.dataus.template.securitycomplex.member.dto.RegisterRequest;
 import com.dataus.template.securitycomplex.member.entity.Member;
@@ -41,7 +42,7 @@ public class MemberServiceImpl implements MemberService {
     }
 
     @Override
-    public void register(RegisterRequest registerRequest) {
+    public MemberResponse register(RegisterRequest registerRequest) {
             
         String username = registerRequest.getUsername();
         String password = registerRequest.getPassword();
@@ -58,6 +59,8 @@ public class MemberServiceImpl implements MemberService {
             null));        
         memberRoleRepository.save(new MemberRole(
             member, RoleType.ROLE_USER));
+        
+        return MemberResponse.of(member);
     }
 
     @Override

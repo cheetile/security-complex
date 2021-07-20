@@ -1,6 +1,7 @@
 package com.dataus.template.securitycomplex.member.controller;
 
 import java.net.URI;
+import java.util.HashMap;
 import java.util.Optional;
 import java.util.Set;
 
@@ -11,7 +12,6 @@ import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.NotEmpty;
 import javax.validation.constraints.Size;
 
-import com.dataus.template.securitycomplex.common.dto.BaseResponse;
 import com.dataus.template.securitycomplex.common.exception.ErrorType;
 import com.dataus.template.securitycomplex.common.principal.CurrentMember;
 import com.dataus.template.securitycomplex.common.principal.UserPrincipal;
@@ -58,30 +58,22 @@ public class MemberController {
             loginRequest.getPassword());
         
         String accessToken = userPrincipalHandler
-            .getAccessTokenWithProcessLogin(request, response, principal);
-
+            .getAccessTokenWithProcessLogin(
+                request, response, principal.getUsername());
+            
         return ResponseEntity.ok().body(
-                BaseResponse.builder()
-                    .success(true)
-                    .message("success to login")
-                    .accessToken(accessToken)
-                    .data(MemberResponse.of(principal.getMember()))
-                    .build());
+                MemberResponse.of(
+                    principal.getMember(),
+                    accessToken));
     }
 
     @PostMapping("/signout")
-    public ResponseEntity<?> logout(
+    public void logout(
         @CurrentMember UserPrincipal principal,
         HttpServletRequest request, 
         HttpServletResponse response) {
 
         userPrincipalHandler.processLogout(principal, request, response);
-        
-        return ResponseEntity.ok().body(
-                BaseResponse.builder()
-                    .success(true)
-                    .message("Success to logout")
-                    .build());
     }
 
     
@@ -91,15 +83,12 @@ public class MemberController {
         HttpServletRequest request, 
         HttpServletResponse response) {
         
+
         String accessToken = userPrincipalHandler
             .getAccessToken(currentToken, request, response);
         
         return ResponseEntity.ok().body(
-                BaseResponse.builder()
-                    .success(true)
-                    .message("Issued new access token")
-                    .accessToken(accessToken)
-                    .build());
+                new HashMap<>().put("accessToken", accessToken));
     }
 
     @GetMapping("/{username}/exists")
@@ -108,48 +97,32 @@ public class MemberController {
         @PathVariable("username") String username) {
 
         boolean exists = memberService.existsUsername(username);
-        String message = exists ? 
-            String.format("Exists username[%s]", username) : 
-            String.format("Doesn't exist username[%s]", username);
         
         return ResponseEntity.ok().body(
-                BaseResponse.builder()
-                        .success(exists)
-                        .message(message)
-                        .build());
+                new HashMap<>().put("exists", exists));
     }
 
-    @PostMapping("/")
+    @PostMapping
     public ResponseEntity<?> register(
         HttpServletRequest request, 
         HttpServletResponse response,
         @Valid @RequestBody RegisterRequest registerRequest) {
-          
-        memberService.register(registerRequest);
         
-        UserPrincipal principal = userPrincipalHandler.getPrincipal(
-            registerRequest.getUsername(),
-            registerRequest.getPassword());
+        MemberResponse memberResponse = memberService.register(registerRequest);
 
         String accessToken = userPrincipalHandler
-                .getAccessTokenWithProcessLogin(request, response, principal);
+                .getAccessTokenWithProcessLogin(
+                    request, response, memberResponse.getUsername());        
+        memberResponse.setAccessToken(accessToken);
 
         URI location = ServletUriComponentsBuilder
                 .fromCurrentContextPath()
                 .path("/api/v1/members/{id}")
-                .buildAndExpand(principal.getMember().getId())
+                .buildAndExpand(memberResponse.getId())
                 .toUri();
 
-        return ResponseEntity.created(location).body(
-                BaseResponse.builder()
-                    .success(true)
-                    .message(String.format(
-                        "Member username[%s] registered, generated Id[%d]", 
-                        principal.getUsername(), 
-                        principal.getMember().getId()))
-                    .accessToken(accessToken)
-                    .data(MemberResponse.of(principal.getMember()))
-                    .build());
+        return ResponseEntity.created(location)
+                .body(memberResponse);
 
     }
 
@@ -157,15 +130,15 @@ public class MemberController {
     public ResponseEntity<?> findMember(
         @PathVariable("id") Optional<Member> memberOptional) {
         
-        return ResponseEntity.ok()
-                .body(MemberResponse.of(
+        return ResponseEntity.ok().body(
+                MemberResponse.of(
                     memberOptional.orElseThrow(() ->
                         ErrorType.UNAVAILABLE_PAGE.getException())));
     }
 
     
     @PatchMapping("/{id}")
-    public ResponseEntity<?> modifyMember(
+    public void modifyMember(
         @CurrentMember          UserPrincipal principal,
         @PathVariable("id")     Long id,
         @Valid @RequestBody     ModifyRequest modifyRequest) {
@@ -174,19 +147,11 @@ public class MemberController {
             throw ErrorType.MEMBER_NO_AUTHORITY.getException();        
         
         memberService.modifyMember(id, modifyRequest);
-
-        return ResponseEntity.ok().body(
-                BaseResponse.builder()
-                    .success(true)
-                    .message(String.format(
-                        "Modified Member username[%s]", 
-                        principal.getUsername()))
-                    .build());
     }
     
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<?> deleteMember(
+    public void deleteMember(
         @CurrentMember      UserPrincipal principal,
         @PathVariable("id") Long id) {
 
@@ -195,18 +160,10 @@ public class MemberController {
         }
 
         memberService.deleteMember(id);
-
-        return ResponseEntity.ok().body(
-                BaseResponse.builder()
-                    .success(true)
-                    .message(String.format(
-                        "Deleted Member username[%s]", 
-                        principal.getUsername()))
-                    .build());        
     }
 
     @PutMapping("/{id}/roles")
-    public ResponseEntity<?> changeRoles(
+    public void changeRoles(
         @CurrentMember      UserPrincipal principal,
         @PathVariable("id") Long id,
         @NotEmpty @RequestBody Set<RoleType> roles) {
@@ -216,14 +173,6 @@ public class MemberController {
         }
 
         memberService.changeRoles(id, roles);
-
-        return ResponseEntity.ok().body(
-                BaseResponse.builder()
-                    .success(true)
-                    .message(String.format(
-                        "Roles of member username[%s] set to %s", 
-                        principal.getUsername()))
-                    .build());
 
     }
     

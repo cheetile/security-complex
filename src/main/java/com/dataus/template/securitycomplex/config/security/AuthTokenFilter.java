@@ -7,6 +7,7 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import com.dataus.template.securitycomplex.common.exception.CommonException;
 import com.dataus.template.securitycomplex.common.exception.ErrorType;
 import com.dataus.template.securitycomplex.common.principal.UserPrincipal;
 import com.dataus.template.securitycomplex.common.utils.JwtUtils;
@@ -19,7 +20,6 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
 import org.springframework.util.StringUtils;
 import org.springframework.web.filter.OncePerRequestFilter;
-import org.springframework.web.server.ResponseStatusException;
 
 import lombok.NoArgsConstructor;
 
@@ -36,24 +36,20 @@ public class AuthTokenFilter extends OncePerRequestFilter {
     private UserPrincipalService userPrincipalService;
 
     @Override
-    protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
-            throws ServletException, IOException {
-        try{
-            String username = null;
-            
+    protected void doFilterInternal(
+        HttpServletRequest request, 
+        HttpServletResponse response, 
+        FilterChain filterChain) throws ServletException, IOException {
+        
+        try{            
             String accessToken = parseJwt(request);
-            if(accessToken != null && 
+            if(accessToken != null &&
                jwtUtils.validateJwtToken(accessToken)) {
 
                 if(redisUtils.getData(accessToken).isPresent())
-                    throw ErrorType.MEBER_SINGED_OUT
-                            .getException();
+                    throw ErrorType.MEMBER_SINGED_OUT.getException();
 
-                if(jwtUtils.isTokenExpired(accessToken))
-                    throw ErrorType.ACCESS_TOKEN_EXPIRED
-                            .getException();
-
-                username = jwtUtils.getUsernameFromJwtToken(accessToken);
+                String username = jwtUtils.getUsernameFromJwtToken(accessToken);
                 UserPrincipal principal = userPrincipalService
                         .loadUserByUsername(username);
                 principal.setAccessToken(accessToken);
@@ -72,12 +68,10 @@ public class AuthTokenFilter extends OncePerRequestFilter {
                     .getContext()
                     .setAuthentication(authentication);
             }
-
+            
             filterChain.doFilter(request, response);
-        } catch(ResponseStatusException ex) {
-            response.sendError(
-                ex.getStatus().value(),
-                ex.getMessage());
+        } catch(CommonException ex) {
+            ex.getErrorType().sendErrorResponse(request, response);
         }
 
     }

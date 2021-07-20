@@ -2,11 +2,18 @@ package com.dataus.template.securitycomplex.common.exception;
 
 import static org.springframework.http.HttpStatus.BAD_REQUEST;
 import static org.springframework.http.HttpStatus.CONFLICT;
+import static org.springframework.http.HttpStatus.FORBIDDEN;
 import static org.springframework.http.HttpStatus.NOT_FOUND;
 import static org.springframework.http.HttpStatus.UNAUTHORIZED;
 
+import java.io.IOException;
+
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+
 import org.springframework.http.HttpStatus;
-import org.springframework.web.server.ResponseStatusException;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -21,16 +28,19 @@ public enum ErrorType {
     REGISTERED_USERNAME(BAD_REQUEST, "This username already registered"),
     
     // 401 UNAUTHORIZED
+    OAUTH_LOGIN_FAIL(UNAUTHORIZED, "Oauth login Failed"),
     UNAUTHORIZED_MEMBER(UNAUTHORIZED, "Failed to authorize"),
-    MEMBER_NO_AUTHORITY(UNAUTHORIZED, "Unauthorized access"),
     NOT_SUPPORTED_PROVIDER(UNAUTHORIZED, "This provider is not supported yet"),
     CLIENT_REFRESH_TOKEN_NOT_EXIST(UNAUTHORIZED, "Client refresh token doesn't exist"),
     SERVER_REFRESH_TOKEN_NOT_EXIST(UNAUTHORIZED, "Server refresh token doesn't exist"),
     INVALID_REFRESH_TOKEN(UNAUTHORIZED, "This refresh token can't authenticate"),
-    MEBER_SINGED_OUT(UNAUTHORIZED, "This member signed out"),
+    MEMBER_SINGED_OUT(UNAUTHORIZED, "This member signed out"),
     UNAUTHORIZED_REDIRECTION(UNAUTHORIZED, "Unauthorized redirection"),
     ACCESS_TOKEN_EXPIRED(UNAUTHORIZED, "Access token expired"),
     INVALID_TOKEN_REQUEST(UNAUTHORIZED, "Current access token is invalid or not expired"),
+    
+    // 403 FORBIDDEN
+    MEMBER_NO_AUTHORITY(FORBIDDEN, "Unauthorized access"),
 
     // 404 NOT_FOUND
     UNAVAILABLE_PAGE(NOT_FOUND, "This page not found"),
@@ -45,9 +55,24 @@ public enum ErrorType {
     private HttpStatus httpStatus;
     private String message;
     
-    public ResponseStatusException getException() {
-        log.error("CustomException ErrorType: {}", this);
-        return new ResponseStatusException(this.httpStatus, this.message);
+    public CommonException getException() {
+        log.error("CommonException ErrorType: {}", this);
+        return new CommonException(this);
+    }
+
+    public void sendErrorResponse(
+        HttpServletRequest request, 
+        HttpServletResponse response) throws IOException {
+        
+        log.error("CommonException ErrorType: {}", this);
+
+        String json = new ObjectMapper().writeValueAsString(
+                new ErrorResponse(request, this));
+        response.setStatus(this.getHttpStatus().value());
+        response.setContentType("application/json");
+        response.getWriter().write(json);
+        response.flushBuffer();
+
     }
 
     @Override

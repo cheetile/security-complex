@@ -12,15 +12,16 @@ import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import com.dataus.template.securitycomplex.common.dto.BaseResponse;
 import com.dataus.template.securitycomplex.common.exception.ErrorType;
 import com.dataus.template.securitycomplex.common.principal.UserPrincipal;
 import com.dataus.template.securitycomplex.common.property.AppProperties;
 import com.dataus.template.securitycomplex.common.utils.CookieUtils;
 import com.dataus.template.securitycomplex.common.utils.JwtUtils;
 import com.dataus.template.securitycomplex.common.utils.RedisUtils;
+import com.dataus.template.securitycomplex.member.dto.MemberResponse;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import org.springframework.http.HttpStatus;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.web.authentication.SimpleUrlAuthenticationSuccessHandler;
 import org.springframework.stereotype.Component;
@@ -92,11 +93,8 @@ public class OAuth2AuthenticationSuccessHandler extends SimpleUrlAuthenticationS
         
         String accessToken = jwtUtils.generateAccessToken(username);
         String json = new ObjectMapper().writeValueAsString(
-                BaseResponse.builder()
-                    .success(true)
-                    .message("Success to login")
-                    .accessToken(accessToken)
-                    .build());
+                MemberResponse.of(principal.getMember(), accessToken));
+        response.setStatus(HttpStatus.OK.value());
         response.setContentType("application/json");
         response.getWriter().write(json);
         response.flushBuffer();

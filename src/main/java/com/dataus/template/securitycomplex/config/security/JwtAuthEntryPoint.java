@@ -11,9 +11,6 @@ import com.dataus.template.securitycomplex.common.exception.ErrorType;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.web.AuthenticationEntryPoint;
 
-import lombok.extern.slf4j.Slf4j;
-
-@Slf4j
 public class JwtAuthEntryPoint implements AuthenticationEntryPoint {
 
     @Override
@@ -23,13 +20,7 @@ public class JwtAuthEntryPoint implements AuthenticationEntryPoint {
         AuthenticationException authException) 
         throws IOException, ServletException {
 
-        ErrorType error = ErrorType.UNAUTHORIZED_MEMBER;
-
-        log.error("AuthenticationException ErrorType: {}", error);
-        
-        response.sendError(
-            error.getHttpStatus().value(),
-            error.getMessage());
+        ErrorType.UNAUTHORIZED_MEMBER.sendErrorResponse(request, response);
     }
     
 }

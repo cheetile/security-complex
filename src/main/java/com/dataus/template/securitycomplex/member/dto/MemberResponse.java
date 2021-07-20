@@ -4,7 +4,9 @@ import java.util.Collection;
 
 import com.dataus.template.securitycomplex.config.security.oauth2.info.enums.ProviderType;
 import com.dataus.template.securitycomplex.member.entity.Member;
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
+import com.fasterxml.jackson.annotation.JsonInclude.Include;
 
 import org.springframework.security.core.GrantedAuthority;
 
@@ -34,7 +36,10 @@ public class MemberResponse {
 
     private Collection<? extends GrantedAuthority> roles;
 
-    public static MemberResponse of(Member member) {
+    @JsonInclude(Include.NON_NULL)
+    private String accessToken;
+
+    public static MemberResponse of(Member member, String accessToken) {
         return MemberResponse.builder()
                     .id(member.getId())
                     .username(member.getUsername())
@@ -43,7 +48,12 @@ public class MemberResponse {
                     .email(member.getEmail())
                     .image(member.getImageUrl())
                     .roles(member.getRoleTypes())
+                    .accessToken(accessToken)
                     .build();
+    }
+
+    public static MemberResponse of(Member member) {
+        return MemberResponse.of(member, null);
     }
     
 }

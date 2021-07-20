@@ -2,6 +2,7 @@ package com.dataus.template.securitycomplex.common.utils;
 
 import java.util.Date;
 
+import com.dataus.template.securitycomplex.common.exception.ErrorType;
 import com.dataus.template.securitycomplex.common.property.AppProperties;
 import com.dataus.template.securitycomplex.common.property.AppProperties.Auth;
 
@@ -67,33 +68,25 @@ public class JwtUtils {
             return true;
         } catch (SignatureException e) {
             log.error("Invalid JWT signature: {}", e.getMessage());
+            throw ErrorType.INVALID_TOKEN_REQUEST.getException();
         } catch (MalformedJwtException e) {
             log.error("Invalid JWT token: {}", e.getMessage());
+            throw ErrorType.INVALID_TOKEN_REQUEST.getException();
         } catch (ExpiredJwtException e) {
             log.error("JWT token is expired: {}", e.getMessage());
-            return true;
+            throw ErrorType.ACCESS_TOKEN_EXPIRED.getException();            
         } catch (UnsupportedJwtException e) {
             log.error("JWT token is unsupported: {}", e.getMessage());
+            throw ErrorType.INVALID_TOKEN_REQUEST.getException();
         } catch (IllegalArgumentException e) {
             log.error("JWT claims string is empty: {}", e.getMessage());
+            throw ErrorType.INVALID_TOKEN_REQUEST.getException();
         }
-
-        return false;
     }
 
     public String getUsernameFromJwtToken(String token) {
         return extractAllClaims(token)
                 .getSubject();
-    }
-
-    public boolean isTokenExpired(String token) {
-        try {
-            extractAllClaims(token);
-            
-            return false;
-        } catch (ExpiredJwtException e) {
-            return true;
-        }
     }
 
     public int getExpirationMs(String token) {
