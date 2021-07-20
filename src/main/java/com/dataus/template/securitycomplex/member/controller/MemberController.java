@@ -77,7 +77,7 @@ public class MemberController {
     }
 
     
-    @GetMapping("/token")
+    @PostMapping("/token")
     public ResponseEntity<?> getAccessToken(
         @NotEmpty @RequestParam("current") String currentToken,
         HttpServletRequest request, 
